@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -5,9 +7,17 @@ from .core.config import settings
 from .core.database import init_indexes
 from .routers import auth, classes, enrollment, attendance, reports
 
+logger = logging.getLogger(__name__)
+
 @asynccontextmanager
 async def lifespan(app):
     await init_indexes()
+    # Pre-load the InsightFace model at startup so the first verify request
+    # never blocks waiting for a cold model load.
+    logger.info("Pre-loading InsightFace model...")
+    from .services import face_service
+    await asyncio.to_thread(face_service._model)
+    logger.info("InsightFace model ready.")
     yield
 
 app = FastAPI(title="Attendance API", lifespan=lifespan)

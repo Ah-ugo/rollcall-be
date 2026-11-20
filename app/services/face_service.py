@@ -8,7 +8,7 @@ def _model():
     global _app
     if _app is None:
         from insightface.app import FaceAnalysis
-        _app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
+        _app = FaceAnalysis(name="buffalo_sc", providers=["CPUExecutionProvider"])
         _app.prepare(ctx_id=-1, det_size=(640, 640))
     return _app
 

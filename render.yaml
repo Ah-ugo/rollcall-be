@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: attendance-backend
+    runtime: python
+    rootDir: .
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      # InsightFace will read this and store/find models here instead of
+      # the ephemeral /opt/render path. Must match disk.mountPath below.
+      - key: INSIGHTFACE_HOME
+        value: /data/insightface
+    disk:
+      name: insightface-models
+      mountPath: /data/insightface
+      sizeGB: 1
