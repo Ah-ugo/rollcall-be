@@ -203,9 +203,14 @@ async def verify(token: str, body: VerifyIn):
         await _log(s, matric, enr, False, "Poor GPS accuracy", accuracy=body.accuracy)
         _fail("poor_gps", f"Location is too imprecise (±{round(body.accuracy)} m). Move near a window or outdoors and retry.", 422)
     dist = haversine_m(body.latitude, body.longitude, s["latitude"], s["longitude"])
-    if dist > s["radius_m"]:
+    # Give the student the benefit of GPS uncertainty: a reported position that
+    # is within (radius + accuracy) of the venue could plausibly be inside the
+    # radius. We subtract the reported accuracy from the measured distance so
+    # that only students whose *best-case* position is outside the fence fail.
+    effective_dist = max(0.0, dist - body.accuracy)
+    if effective_dist > s["radius_m"]:
         await _log(s, matric, enr, False, "Outside radius", distance_m=round(dist), similarity=round(score, 3))
-        _fail("outside_radius", f"You are about {round(dist)} m from the venue. The limit is {round(s['radius_m'])} m.", 403)
+        _fail("outside_radius", f"You are about {round(dist)} m from the venue (±{round(body.accuracy)} m GPS). The limit is {round(s['radius_m'])} m.", 403)
 
     try:
         await db.attendance_records.insert_one({"session_id": s["_id"], "class_id": s["class_id"],
